@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>AI Commerce Advisor — Dashboard</title>
+  <meta name="description" content="Chat z Asystentem AI, rekomendacje i alerty w jednym panelu."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #f1f5f9; --ink: #0f172a; --ink-2: #334155; --muted: #64748b;
+      --card: #ffffff; --ring: rgba(0,0,0,.05); --accent: #0f172a; --accent-2:#1e293b;
+      --brand:#0891b2; --green:#16a34a; --red:#dc2626; --warn:#f59e0b; --border:#e2e8f0; --chip: rgba(15,23,42,.035);
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;color:var(--ink);background:linear-gradient(135deg,#f8fafc,#eef6ff 35%,#e6f2ff)}
+    .bg-grid{position:fixed;inset:0;z-index:-2;opacity:.35;mix-blend:multiply}
+    .bg-blob{position:fixed;inset:auto;z-index:-1;filter:blur(80px);opacity:.5;animation:float 12s ease-in-out infinite}
+    .bg-blob.one{top:10%;left:50%;width:42rem;height:42rem;background:#7dd3fc;transform:translateX(-50%)}
+    .bg-blob.two{bottom:0;left:0;width:28rem;height:28rem;background:#a5b4fc;animation-delay:-3s}
+    @keyframes float{0%{transform:translateY(0)}50%{transform:translateY(-18px)}100%{transform:translateY(0)}}
+    .container { max-width: none;margin:0; width:100%; padding-left:1rem; padding-right:1rem;padding:0 1rem}
+    header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+    .row{display:flex;align-items:center;gap:.75rem}
+    .row.between{justify-content:space-between}
+    .badge{display:inline-flex;align-items:center;gap:.4rem;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.8);backdrop-filter:blur(4px);padding:.35rem .75rem;font-size:.72rem;color:#334155 font-size:0.55rem; padding:.15rem .45rem;}
+    .card{background:var(--card);border-radius:16px;box-shadow:0 1px 1px var(--ring),0 2px 8px var(--ring);border:1px solid rgba(0,0,0,.04)}
+    .pad{padding:1rem}
+    .muted{color:var(--muted)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:.55rem .85rem;border-radius:12px;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--ink);cursor:pointer}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    .btn.primary:hover{background:var(--accent-2)}
+    .btn:hover{filter:brightness(.98)}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:1rem}
+    .kpi{padding:1rem;border:1px solid var(--border);border-radius:16px;background:#fff}
+    .kpi b{display:block;font-size:1.4rem}
+    .grid{display:grid;gap:1rem;margin-top:1rem}
+    @media(min-width:980px){ .grid.cols{grid-template-columns: 480px 1fr} }
+    .panel{border:1px solid var(--border);border-radius:16px;background:#fff;display:flex;flex-direction:column;min-height:420px}
+    .panel>.head{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .panel>.head h2{margin:0;font-size:1rem}
+    .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;padding:.5rem 1rem;border-bottom:1px dashed var(--border);background:rgba(255,255,255,.6)}
+    .chip{padding:.3rem .6rem;border-radius:999px;background:var(--chip);border:1px solid var(--border);color:#334155;display:inline-flex;align-items:center;gap:.5rem}
+    .chip input{accent-color:#0ea5e9}
+    .messages{flex:1;overflow:auto;padding:1rem;display:flex;flex-direction:column;gap:.75rem}
+    .msg{display:flex;gap:.5rem}
+    .who{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#eef2ff;border:1px solid var(--border);font-weight:700;color:#1e293b}
+    .bubble{max-width:85%;padding:.7rem .85rem;border-radius:12px;border:1px solid var(--border);background:#f8fafc}
+    .msg.user .bubble{background:#ffffff}
+    .composer{border-top:1px solid var(--border);padding:.6rem;display:flex;gap:.5rem;align-items:center}
+    input,textarea{width:100%;padding:.6rem .75rem;border:1px solid var(--border);border-radius:12px;font-size:.95rem;background:#fff;color:var(--ink)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:.7rem;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
+    th{color:#334155;font-weight:600}
+    .tag{font-size:.75rem;background:#eff6ff;color:#1e40af;border:1px solid #dbeafe;padding:.15rem .45rem;border-radius:8px}
+    .tag.ok{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
+    .tag.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
+    .tag.crit{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+    .small{font-size:.85rem;color:var(--muted)}
+    .right{margin-left:auto}
+    footer{color:var(--muted);font-size:.85rem;text-align:center;margin:14px 0}
+  
+/* --- Full-viewport layout & no overflow --- */
+html, body { height: 100%; }
+body { min-height: 100svh; display: flex; flex-direction: column; overflow: hidden; }
+header { flex: 0 0 auto; }
+main.container { flex: 1 1 auto; display: flex; flex-direction: column; overflow: hidden; }
+.kpis { flex: 0 0 auto; }
+.grid.cols { flex: 1 1 auto; min-height: 0; height: 100%; }
+.panel { min-height: 0; display: flex; flex-direction: column; }
+.panel > .head, .panel > .toolbar { flex: 0 0 auto; }
+.panel > .pad { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.messages { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.container { max-width: none; }
+body, .container { overflow-x: hidden; }
+
+/* --- Split right panel into two always-visible panes --- */
+.split { display: flex; gap: 1rem; height: 100%; min-height: 0; }
+.split .pane { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+.pane-head { padding: .6rem .8rem; border-bottom: 1px solid var(--border); background: rgba(255,255,255,.7); }
+.pane .content { flex: 1 1 auto; min-height: 0; overflow: auto; padding: .75rem; }
+@media (max-width: 980px) {
+  .split { flex-direction: column; }
+}
+
+/* --- Stack Recommendations over Alerts with 70/30 height split and compact typography --- */
+.split { display: flex; flex-direction: column; gap: 0.75rem; height: 100%; min-height: 0; }
+.split .pane { min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+.split .pane:first-child { flex: 6 1 0; }  /* Recommendations: ~70% */
+.split .pane:last-child  { flex: 4 1 0; }  /* Alerts: ~30% */
+.pane-head { padding: .5rem .7rem; border-bottom: 1px solid var(--border); background: rgba(255,255,255,.7); }
+.pane .content { flex: 1 1 auto; min-height: 0; overflow: auto; padding: .5rem .6rem; font-size: 0.9rem; line-height: 1.25; }
+.pane .content .card, .pane .content table { font-size: 0.9rem; }
+.pane .content .small { font-size: 0.8rem; }
+#recTable th, #recTable td { padding: .45rem .5rem; font-size: 0.9rem; }
+#recTable th { white-space: nowrap; }
+#alerts .card { padding: .5rem .6rem; }
+@media (max-width: 980px) {
+  .split .pane:first-child { flex: 6 1 0; }
+  .split .pane:last-child  { flex: 4 1 0; }
+}
+
+/* --- Variant B: card list instead of table --- */
+.rec-list { display:flex; flex-direction:column; gap:.6rem; }
+.rec-card { border:1px solid var(--border); border-radius:12px; background:#fff; box-shadow:0 1px 1px var(--ring),0 2px 6px var(--ring); padding:.6rem .7rem; display:grid; grid-template-columns:110px 1fr auto; align-items:flex-start; gap:.6rem; }
+.rec-card:hover { box-shadow:0 2px 10px rgba(0,0,0,.06); }
+.rec-card .type { align-self:center; }
+.rec-card .details { overflow:hidden; text-overflow:ellipsis; }
+.rec-card .impact { font-weight:600; margin-bottom:.25rem; }
+.rec-card .actions { display:flex; gap:.4rem; }
+@media (max-width: 720px) {
+  .rec-card { grid-template-columns:1fr; }
+  .rec-card .actions { justify-content:flex-start; }
+}
+
+/* DEMO: card list for recommendations + colored alerts */
+.rec-list { display:flex; flex-direction:column; gap:.6rem; }
+.rec-card { border:1px solid var(--border); border-radius:12px; background:#fff; box-shadow:0 1px 1px var(--ring),0 2px 6px var(--ring); padding:.6rem .7rem; display:grid; grid-template-columns:110px 1fr auto; align-items:flex-start; gap:.6rem; }
+.rec-card:hover { box-shadow:0 2px 10px rgba(0,0,0,.06); }
+.rec-card .type { align-self:center; }
+.rec-card .details { overflow:hidden; text-overflow:ellipsis; }
+.rec-card .impact { font-weight:600; margin-bottom:.25rem; }
+.rec-card .actions { display:flex; gap:.4rem; }
+
+.alert { border-radius:10px; border:1px solid var(--border); padding:.5rem .6rem; }
+.alert.crit  { background:#fef2f2; border-color:#fecaca; color:#7f1d1d; }
+.alert.warn  { background:#fffbeb; border-color:#fde68a; color:#78350f; }
+.alert.info  { background:#eff6ff; border-color:#bfdbfe; color:#1e3a8a; }
+
+@media (max-width: 720px) {
+  .rec-card { grid-template-columns:1fr; }
+  .rec-card .actions { justify-content:flex-start; }
+}
+
+/* Force smaller toolbar badge text */
+.toolbar .badge { 
+  font-size: 0.45rem !important; 
+  padding: .1rem .35rem !important; 
+  line-height: 1.1 !important;
+}
+
+</style>
+</head>
+<body>
+  <svg class="bg-grid" xmlns="http://www.w3.org/2000/svg">
+    <defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#cbd5e1" stroke-width="0.75" /></pattern></defs>
+    <rect width="100%" height="100%" fill="url(#grid)" />
+  </svg>
+  <div class="bg-blob one"></div>
+  <div class="bg-blob two"></div>
+
+  <header>
+    <div class="container">
+      <div class="row between" style="height:64px">
+        <div class="row" style="gap:.5rem">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 5L20 9l-4 4 .9 5L12 15l-4.9 3L8 13 4 9l5.5-1L12 3z" /></svg>
+          <strong>eShop Copilot AI</strong>
+          <span class="badge">Panel</span> <span class="badge" style="background:#e2e8f0;color:#0f172a;border-color:#cbd5e1;">DEMO</span>
+        </div>
+        <div class="small">Połączony: <span id="tenant">elektro-market</span></div><button id="logoutBtn" class="btn" style="margin-left:1rem;font-size:.8rem;padding:.3rem .7rem;">Wyloguj</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding:1rem 0 2rem">
+    <div class="kpis">
+      <div class="kpi card"><span class="small">Dzisiejsza sprzedaż</span><b id="kpi-sales">—</b></div>
+      <div class="kpi card"><span class="small">Marża prognozowana</span><b id="kpi-margin">—</b></div>
+      <div class="kpi card"><span class="small">Alerty (24h)</span><b id="kpi-alerts">—</b></div>
+      <div class="kpi card"><span class="small">Otwarte rekomendacje</span><b id="kpi-recs">—</b></div>
+    </div>
+
+    <div class="grid cols">
+      <section class="panel card">
+        <div class="head">
+          <h2>Asystent AI</h2>
+          <div class="row small"><span class="badge">Tryb: Doradztwo</span></div>
+        </div>
+        <div id="messages" class="messages"></div>
+        <div class="composer">
+          <input id="input" placeholder="Zadaj pytanie, np. 'Jakie produkty podnieść o 3%?'"/>
+          <button id="send" class="btn primary">Wyślij</button>
+        </div>
+        
+      
+        <div class="small" style="color:var(--muted);margin-top:0.25rem;margin-bottom:0.75rem;font-size:0.7rem;color:#9ca3af;padding:0 1rem;">
+          Asystent AI może popełniać błędy, dlatego dokładnie sprawdzaj odpowiedzi.
+        </div>
+        </section>
+
+      <section class="panel card">
+        <div class="head">
+          <h2>Rekomendacje</h2>
+          <div class="small">Auto-odświeżanie: <span id="liveDot">●</span></div>
+        </div>
+        <div class="toolbar">
+          <span class="chip"><input type="checkbox" id="fPrice" checked/> Ceny</span>
+          <span class="chip"><input type="checkbox" id="fStock" checked/> Zakupy</span>
+          <span class="chip"><input type="checkbox" id="fAnom" checked/> Anomalie</span>
+          <span class="chip"><input type="checkbox" id="fInfo" checked/> Info</span>
+        </div>
+        <div class="split">
+          <div class="pane">
+            
+            <div class="content">
+              <div id="recList" class="rec-list"></div>
+            </div>
+          </div>
+          <div class="pane">
+            <div class="pane-head"><h3 style="margin:0;font-size:1rem;font-weight:600;">Alerty</h3></div>
+            <div class="content" id="alerts" style="display:flex;flex-direction:column;gap:.75rem"></div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const $ = sel => document.querySelector(sel);
+    const messages = $("#messages");
+    const recTbody = $("#recTable tbody");
+    const alertsEl = $("#alerts");
+    function addMsg(role, text){
+      const row = document.createElement("div"); row.className = "msg " + (role === "user" ? "user":"ai");
+      const who = document.createElement("div"); who.className = "who"; who.textContent = role === "user" ? "U" : "AI";
+      const bubble = document.createElement("div"); bubble.className = "bubble"; bubble.innerHTML = text;
+      row.appendChild(who); row.appendChild(bubble);
+      messages.appendChild(row);
+      messages.scrollTop = messages.scrollHeight;
+    }
+    function escapeHtml(s){ return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])) }
+    async function streamChat(systemPrompt, userText){
+      addMsg("user", escapeHtml(userText));
+      const ai = { el: document.createElement("div") };
+      ai.el.className = "msg ai";
+      ai.el.innerHTML = '<div class="who">AI</div><div class="bubble"><span class="small">myśli...</span></div>';
+      messages.appendChild(ai.el); messages.scrollTop = messages.scrollHeight;
+      try{
+        const res = await fetch("/api/chat", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({ system: systemPrompt, message: userText })
+        });
+        if(!res.body){
+          const data = await res.json();
+          ai.el.querySelector(".bubble").textContent = data.reply ?? "(brak odpowiedzi)";
+          return;
+        }
+        const reader = res.body.getReader();
+        const dec = new TextDecoder();
+        let buf = "";
+        ai.el.querySelector(".bubble").textContent = "";
+        while(true){
+          const {done, value} = await reader.read();
+          if(done) break;
+          buf += dec.decode(value, {stream:true});
+          ai.el.querySelector(".bubble").textContent = buf;
+          messages.scrollTop = messages.scrollHeight;
+        }
+      }catch(e){
+        ai.el.querySelector(".bubble").innerHTML = "<span class='small'>Brak połączenia z /api/chat – odpowiedź przykładowa.</span><hr/>Zalecam podnieść ceny SKU-123 o 3% i dokupić 50 szt. SKU-456.";
+      }
+    }
+    async function loadRecs(){
+  // DEMO-ONLY: always render sample recommendations
+  renderRecs([
+    { id:"rec-1", type:"price", impact:"+2.4% marża", details:"SKU-123 → 99.99 → <b>102.99</b> (konkurencja -1.8%)", score:0.82 },
+    { id:"rec-2", type:"stock", impact:"+80 szt. dostępności", details:"Zamów <b>50</b> szt. SKU-456 (lead 5 dni, ryzyko OOS)", score:0.77 },
+    { id:"rec-3", type:"price", impact:"+1.1% GMV", details:"Promocja -10% na kategorię 'Akcesoria' przez 48h", score:0.63 },
+    { id:"rec-4", type:"price", impact:"+4.5% sprzedaż", details:"Cross-sell: dodaj rekomendacje zestawu SKU-789 + SKU-101", score:0.71 }
+  ]);
+  renderAlerts([
+    { id:"a1", severity:"critical", text:"Nagły spadek sprzedaży w 'Konsole' (-34% d/d)", when:"przed chwilą" },
+    { id:"a2", severity:"warning",  text:"Podejrzane zamówienie #A-77812 (wartość 9 999 zł)", when:"5 min temu" },
+    { id:"a3", severity:"info",     text:"Zmieniono ceny przez konkurencję na 17 ofertach", when:"10 min temu" },
+    { id:"a4", severity:"warning",  text:"Wysoka liczba zwrotów dla SKU-222 (15% w tym tygodniu)", when:"15 min temu" }
+  ]);
+  // Keep loaders (still demo-only)
+  loadRecs(); loadAlerts();
+document.getElementById("kpi-sales").textContent = "47,2 tys. zł";
+      document.getElementById("kpi-margin").textContent = "22.8%";
+    })();
+    function toast(t){
+      const el = document.createElement("div");
+      el.textContent = t;
+      el.style.position="fixed"; el.style.bottom="20px"; el.style.right="20px";
+      el.style.background="#fff"; el.style.border="1px solid var(--border)"; el.style.padding="10px 14px";
+      el.style.borderRadius="12px"; el.style.zIndex="1000"; el.style.boxShadow="0 2px 8px rgba(0,0,0,.08)";
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),1800);
+    }
+  
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  window.location.href = '/logout';
+});
+
+document.getElementById("clearChat").addEventListener("click", ()=>{
+  const messages = document.getElementById("messages");
+  if(messages) messages.innerHTML = "";
+});
+
+</script>
+
+<script>
+// === DEMO: render sample recommendations & alerts on this layout ===
+(function(){
+  function renderRecsDemo(items){
+    const list = document.getElementById("recList");
+    const tbody = document.querySelector("#recTable tbody");
+    if (list) {
+      list.innerHTML = "";
+      for (const x of items){
+        const card = document.createElement("div");
+        card.className = "rec-card";
+        const tag = x.type === "price" ? "<span class='tag'>CENA</span>" : x.type === "stock" ? "<span class='tag'>MAGAZYN</span>" : "<span class='tag'>INNE</span>";
+        card.innerHTML = `
+          <div class="type">${tag}</div>
+          <div class="details">
+            <div class="impact">${x.impact ?? "-"}</div>
+            <div class="small">${x.details}</div>
+            <div class="small">pewność ${(Math.round((x.score??0)*100))}%</div>
+          </div>
+          <div class="actions">
+            <button class="btn" onclick="applyAction ? applyAction('${x.id}') : 0">Zastosuj</button>
+            <button class="btn" onclick="explain ? explain('${x.id}') : 0">Wyjaśnij</button>
+            <button class="btn" onclick="dismiss ? dismiss('${x.id}') : 0">Odrzuć</button>
+          </div>`;
+        list.appendChild(card);
+      }
+      const k = document.getElementById("kpi-recs"); if(k) k.textContent = items.length;
+      return;
+    }
+    if (tbody) {
+      tbody.innerHTML = "";
+      for (const x of items){
+        const tr = document.createElement("tr");
+        const tag = x.type === "price" ? "<span class='tag'>CENA</span>" : x.type === "stock" ? "<span class='tag'>MAGAZYN</span>" : "<span class='tag'>INNE</span>";
+        tr.innerHTML = `<td>${tag}</td>
+          <td>${x.details}</td>
+          <td><b>${x.impact ?? "-"}</b><div class="small">pewność ${(Math.round((x.score??0)*100))}%</div></td>
+          <td class="row" style="gap:.4rem">
+            <button class="btn" onclick="applyAction ? applyAction('${x.id}') : 0">Zastosuj</button>
+            <button class="btn" onclick="explain ? explain('${x.id}') : 0">Wyjaśnij</button>
+            <button class="btn" onclick="dismiss ? dismiss('${x.id}') : 0">Odrzuć</button>
+          </td>`;
+        tbody.appendChild(tr);
+      }
+      const k = document.getElementById("kpi-recs"); if(k) k.textContent = items.length;
+    }
+  }
+  function renderAlertsDemo(items){
+    const el = document.getElementById("alerts");
+    if(!el) return;
+    el.innerHTML = "";
+    let cnt = 0;
+    for(const a of items){
+      cnt++;
+      const box = document.createElement("div");
+      const cls = a.severity === "critical" ? "crit" : a.severity === "warning" ? "warn" : "info";
+      box.className = "alert " + cls;
+      box.innerHTML = `<div style="display:flex;justify-content:space-between;gap:.6rem;align-items:flex-start">
+        <div><strong>${(a.severity||'').toUpperCase()}</strong> — ${a.text}</div>
+        <span class="small">${a.when ?? ""}</span>
+      </div>`;
+      el.appendChild(box);
+    }
+    const k = document.getElementById("kpi-alerts"); if(k) k.textContent = cnt;
+  }
+
+  function showDemo(){
+
+    // Sample chat messages
+    const messages = document.getElementById("messages");
+    if(messages){
+      function addMsg(role, html){
+        const row = document.createElement("div");
+        row.className = "msg " + role;
+        row.innerHTML = `<div class="who">${role==="user"?"U":"AI"}</div><div class="bubble">${html}</div>`;
+        messages.appendChild(row);
+      }
+      addMsg("user","Jakie szybkie działania zwiększą marżę w tym tygodniu?");
+      addMsg("ai","Sugeruję +3% na SKU-123, ograniczenie rabatu w akcesoriach do -5% oraz zamówienie 50 szt. SKU-456 (ryzyko OOS).");
+    }
+
+    // KPIs
+    const s = document.getElementById("kpi-sales"); if(s) s.textContent = "47,2 tys. zł";
+    const m = document.getElementById("kpi-margin"); if(m) m.textContent = "22.8%";
+    // Lists
+    renderRecsDemo([
+      { id:"rec-1", type:"price", impact:"+2.4% marża", details:"SKU-123 → 99.99 → <b>102.99</b> (konkurencja -1.8%)", score:0.82 },
+      { id:"rec-2", type:"stock", impact:"+80 szt. dostępności", details:"Zamów <b>50</b> szt. SKU-456 (lead 5 dni, ryzyko OOS)", score:0.77 },
+      { id:"rec-3", type:"price", impact:"+1.1% GMV", details:"Promocja -10% na kategorię 'Akcesoria' przez 48h", score:0.63 }
+    ]);
+    renderAlertsDemo([
+      { id:"a1", severity:"critical", text:"Nagły spadek sprzedaży w 'Konsole' (-34% d/d)", when:"przed chwilą" },
+      { id:"a2", severity:"warning",  text:"Podejrzane zamówienie #A-77812 (wartość 9 999 zł)", when:"5 min temu" },
+      { id:"a3", severity:"info",     text:"Zmieniono ceny przez konkurencję na 17 ofertach", when:"10 min temu" }
+    ]);
+  }
+
+  // Priority: run after page scripts, but before user interaction
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(showDemo, 0);
+  } else {
+    document.addEventListener('DOMContentLoaded', showDemo);
+  }
+})();
+</script>
+
+
+<div style="position:fixed;bottom:4px;left:8px;font-size:0.75rem;color:#9ca3af;">
+  © 2025 Simmsoft. Wszelkie prawa zastrzeżone.
+</div>
+
+
+<style>
+body .toolbar .badge {
+  font-size: 0.4rem !important;
+  padding: .05rem .25rem !important;
+  line-height: 1 !important;
+}
+</style>
+
+
+<style>
+/* The toolbar uses .chip, not .badge — shrink it here */
+.toolbar .chip {
+  font-size: 0.65rem !important;
+  padding: .05rem .3rem !important;
+  line-height: 1 !important;
+}
+.toolbar .chip input {
+  transform: scale(0.85);
+  margin-right: .25rem;
+}
+</style>
+
+
+<style>
+main.container {
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+</style>
+
+</body>
+</html>

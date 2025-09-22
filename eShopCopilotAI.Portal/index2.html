@@ -1,0 +1,741 @@
+﻿<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>eShop Copilot AI — Portal i Cennik (Static, No React/TS/Decorators)</title>
+    <meta name="description" content="Personalizowany doradca AI dla sprzedających na Allegro: prognozowanie sprzedaży, rekomendacje cenowe, wykrywanie anomalii, symulacje 'co-jeśli'." />
+    <!--
+      IMPORTANT:
+      • This page is 100% static HTML/CSS/JS. It does NOT use React, JSX, TypeScript or decorators.
+      • If your toolchain tried to compile /index.tsx and failed with:
+          "Support for the experimental syntax 'decorators' isn't currently enabled" or
+          "Unexpected token (1:0)",
+        deploy THIS file as index.html (or ensure your hosting points directly to this file).
+        This removes the need for TS/JSX parsing entirely.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f1f5f9; /* slate-100 */
+            --ink: #0f172a; /* slate-900 */
+            --ink-2: #334155; /* slate-700 */
+            --muted: #64748b; /* slate-500 */
+            --card: #ffffff;
+            --ring: rgba(0,0,0,.05);
+            --accent: #0f172a;
+            --accent-2: #1e293b;
+            --brand: #0891b2;
+            --green: #16a34a;
+            --red: #dc2626;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            margin: 0;
+            font-family: Inter,system-ui,Arial,sans-serif;
+            color: var(--ink);
+            background: linear-gradient(135deg,#f8fafc,#eef6ff 35%,#e6f2ff);
+        }
+
+        /* Animated background ornaments */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            opacity: .35;
+            mix-blend: multiply
+        }
+
+        .bg-blob {
+            position: fixed;
+            inset: auto;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: .5;
+            animation: float 12s ease-in-out infinite
+        }
+
+            .bg-blob.one {
+                top: 10%;
+                left: 50%;
+                width: 42rem;
+                height: 42rem;
+                background: #7dd3fc;
+                transform: translateX(-50%)
+            }
+
+            .bg-blob.two {
+                bottom: 0;
+                left: 0;
+                width: 28rem;
+                height: 28rem;
+                background: #a5b4fc;
+                animation-delay: -3s
+            }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-18px)
+            }
+
+            100% {
+                transform: translateY(0)
+            }
+        }
+
+        .container {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 1rem
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255,255,255,.85);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid #e2e8f0
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px
+        }
+
+        nav a {
+            color: var(--ink-2);
+            text-decoration: none;
+            margin-left: 1rem;
+            font-size: .95rem
+        }
+
+            nav a:hover {
+                color: var(--ink)
+            }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: .65rem 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            color: var(--ink)
+        }
+
+            .btn.primary {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: #fff
+            }
+
+                .btn.primary:hover {
+                    background: var(--accent-2)
+                }
+
+            .btn:hover {
+                filter: brightness(.98)
+            }
+
+        section {
+            padding: 4rem 0
+        }
+
+        .grid {
+            display: grid;
+            gap: 1rem
+        }
+
+        @media (min-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .grid-3 {
+                grid-template-columns: repeat(3,1fr)
+            }
+
+            .grid-4 {
+                grid-template-columns: repeat(4,1fr)
+            }
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            background: rgba(255,255,255,.8);
+            backdrop-filter: blur(4px);
+            padding: .35rem .75rem;
+            font-size: .72rem;
+            color: #334155
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 1px 1px var(--ring),0 2px 8px var(--ring);
+            border: 1px solid rgba(0,0,0,.04)
+        }
+
+            .card.pad {
+                padding: 1.25rem
+            }
+
+        .hero h1 {
+            font-size: 2.25rem;
+            line-height: 1.1;
+            margin: 0
+        }
+
+        @media (min-width:640px) {
+            .hero h1 {
+                font-size: 3rem
+            }
+        }
+
+        .lead {
+            color: #475569;
+            font-size: 1.1rem
+        }
+
+        .feature-title {
+            font-weight: 600
+        }
+
+        .muted {
+            color: #64748b;
+            font-size: .9rem
+        }
+
+        .toggle {
+            position: relative;
+            width: 56px;
+            height: 28px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            border: none
+        }
+
+        .knob {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 999px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(0,0,0,.15);
+            transition: transform .2s ease
+        }
+
+        .toggle.active .knob {
+            transform: translateX(28px)
+        }
+
+        .price {
+            font-weight: 800;
+            font-size: 1.75rem
+        }
+
+        .list {
+            list-style: none;
+            padding: 0;
+            margin: .5rem 0 0 0
+        }
+
+            .list li {
+                display: flex;
+                gap: .5rem;
+                align-items: flex-start
+            }
+
+        .icon {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 18px
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: .35rem .6rem;
+            border-radius: 8px;
+            background: #0ea5e9;
+            color: #fff;
+            font-size: .7rem
+        }
+
+        /* form */
+        form .input, form textarea {
+            width: 100%;
+            padding: .65rem .8rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: .95rem
+        }
+
+        form textarea {
+            min-height: 120px;
+            resize: vertical
+        }
+
+        .note {
+            font-size: .85rem;
+            color: #64748b
+        }
+
+        .alert {
+            padding: .6rem .8rem;
+            border-radius: 10px;
+            font-size: .85rem;
+            margin: .5rem 0 0
+        }
+
+            .alert.ok {
+                background: #ecfdf5;
+                color: #065f46;
+                border: 1px solid #a7f3d0
+            }
+
+            .alert.err {
+                background: #fef2f2;
+                color: #991b1b;
+                border: 1px solid #fecaca
+            }
+
+        footer {
+            background: rgba(255,255,255,.7);
+            backdrop-filter: blur(6px);
+            border-top: 1px solid #e2e8f0
+        }
+
+        .footer-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2rem 0;
+            flex-wrap: wrap
+        }
+
+        /* helpers */
+        .center {
+            text-align: center
+        }
+
+        .mt-2 {
+            margin-top: .5rem
+        }
+
+        .mt-3 {
+            margin-top: .75rem
+        }
+
+        .mt-4 {
+            margin-top: 1rem
+        }
+
+        .mt-6 {
+            margin-top: 1.5rem
+        }
+
+        .mt-8 {
+            margin-top: 2rem
+        }
+
+        .mt-10 {
+            margin-top: 2.5rem
+        }
+
+        .mb-2 {
+            margin-bottom: .5rem
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem
+        }
+    </style>
+</head>
+<body>
+    <!-- background visuals -->
+    <svg class="bg-grid" xmlns="http://www.w3.org/2000/svg">
+        <defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#cbd5e1" stroke-width="0.75" /></pattern></defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+    </svg>
+    <div class="bg-blob one"></div>
+    <div class="bg-blob two"></div>
+
+    <!-- header -->
+    <header>
+        <div class="container">
+            <div class="row">
+                <a href="#" style="display:flex;align-items:center;gap:.5rem;font-weight:700;text-decoration:none;color:var(--ink)">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 5L20 9l-4 4 .9 5L12 15l-4.9 3L8 13 4 9l5.5-1L12 3z" /></svg>
+                    eShop Copilot AI
+                </a>
+                <nav>
+                    <a href="#features">Funkcje</a>
+                    <a href="#how">Jak to działa</a>
+                    <a href="#pricing">Cennik</a>
+                </nav>
+                <div style="display:flex;gap:.5rem">
+                    <a class="btn" href="dashboard.html">Zobacz demo</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- hero -->
+    <section class="hero">
+        <div class="container">
+            <div class="grid grid-2" style="align-items:center;gap:2rem">
+                <div>
+                    <div class="mb-4" style="display:flex;gap:.5rem;flex-wrap:wrap">
+                        <span class="badge"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2 6-6-2 2 6-6-2 2 6" /></svg> Personalizowany doradca Allegro</span>
+                        <span class="badge"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4h-2v6H5v2h6v6h2v-6h6v-2h-6z" /></svg> Prognozy • Ceny • Anomalie</span>
+                    </div>
+                    <h1>Asystent AI wspomagający zarządzanie Twoim sklepem</h1>
+                    <p class="lead mt-3">eShop Copilot AI analizuje sprzedaż, konkurencję i sezonowość, aby prognozować popyt, rekomendować ceny i wykrywać anomalie. Zmieniaj ceny i plany zakupów jednym kliknięciem.</p>
+                    <div class="mt-6" style="display:flex;gap:.5rem;flex-wrap:wrap">
+                        <a class="btn primary" href="#pricing">Zobacz cennik</a>
+                        <a class="btn" href="dashboard.html">
+                            Zobacz demo
+                            <svg class="icon" style="margin-left:.25rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6" /></svg>
+                        </a>
+                    </div>
+                    <p class="note mt-3">Integracja z oficjalnym Allegro REST API. Zgodność z RODO. Dane w UE.</p>
+                </div>
+                <div>
+                    <div class="card pad">
+                        <div style="display:flex;align-items:center;gap:.5rem"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18" /></svg><strong>Przykładowa rekomendacja asystenta</strong></div>
+                        <div class="mt-3">
+                            <div class="card pad" style="background:#f8fafc">
+                                <p class="mb-2"><strong>SKU:</strong> Kurtka Softshell X200</p>
+                                <p>Prognoza na 7 dni: <strong>120 szt.</strong> • Stan: 60 • <strong>Zamów: 70</strong></p>
+                                <p>Cena rynkowa (p50): 249 zł • Twoja: 259 zł. <strong>Propozycja: 249 zł</strong> = +13% wolumenu, −2% marży.</p>
+                            </div>
+                            <div class="card pad mt-3" style="background:#f8fafc">
+                                <p class="mb-2"><strong>Wykryto anomalię</strong></p>
+                                <p>Sprzedaż spadła o 41% d/d przy stałej ekspozycji. Nowa oferta konkurenta w TOP3: −10% ceny.</p>
+                            </div>
+                        </div>
+                        <div class="mt-6" style="display:flex;gap:.5rem;flex-wrap:wrap">
+                            <button class="btn primary" type="button">Zastosuj zmiany</button>
+                            <button class="btn" type="button">Pokaż uzasadnienie</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- features -->
+    <section id="features" style="background:rgba(255,255,255,.6);backdrop-filter:blur(6px)">
+        <div class="container">
+            <div class="center">
+                <h2>Funkcje, które dają przewagę</h2>
+                <p class="muted">Od predykcji popytu, przez automatyczne rekomendacje cen, po alerty i symulacje scenariuszy.</p>
+            </div>
+            <div class="grid grid-3 mt-8">
+                <div class="card pad">
+                    <div style="display:flex;gap:.5rem;align-items:center"><div class="pill">1</div><span class="feature-title">Prognozowanie sprzedaży</span></div>
+                    <p class="muted mt-2">Prognozy per SKU z sezonowością i wpływem kampanii.</p>
+                </div>
+                <div class="card pad">
+                    <div style="display:flex;gap:.5rem;align-items:center"><div class="pill">2</div><span class="feature-title">Rekomendacje cenowe</span></div>
+                    <p class="muted mt-2">Reguły, progi marżowe, a w Pro także pricing sterowany politykami.</p>
+                </div>
+                <div class="card pad">
+                    <div style="display:flex;gap:.5rem;align-items:center"><div class="pill">3</div><span class="feature-title">Alerty i anomalie</span></div>
+                    <p class="muted mt-2">Wykrywanie odchyleń popytu/ceny i powiadomienia w czasie zbliżonym do rzeczywistego.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- how it works -->
+    <section id="how">
+        <div class="container">
+            <div class="center">
+                <h2>Jak to działa</h2>
+                <p class="muted">Połącz konto Allegro, zsynchronizuj dane i korzystaj z rekomendacji w panelu lub przez API.</p>
+            </div>
+            <div class="grid grid-3 mt-8">
+                <div class="card pad">
+                    <div class="muted">Krok 1</div>
+                    <div class="feature-title mt-2">Połącz Allegro</div>
+                    <p class="muted mt-2">Autoryzacja OAuth. Import ofert, historii sprzedaży i cen.</p>
+                </div>
+                <div class="card pad">
+                    <div class="muted">Krok 2</div>
+                    <div class="feature-title mt-2">Uczymy się danych</div>
+                    <p class="muted mt-2">Modele prognoz i anomalie dopasowane do Twoich SKU.</p>
+                </div>
+                <div class="card pad">
+                    <div class="muted">Krok 3</div>
+                    <div class="feature-title mt-2">Działasz szybciej</div>
+                    <p class="muted mt-2">Asystent sugeruje ceny i zakupy. Zatwierdzasz jednym kliknięciem.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- pricing -->
+    <section id="pricing" style="background:rgba(255,255,255,.6);backdrop-filter:blur(6px)">
+        <div class="container">
+            <div class="center">
+                <h2>Cennik</h2>
+                <p class="muted">Prosty abonament. Wybierz miesięcznie lub rocznie <span id="saveText">(2 mies. gratis)</span>.</p>
+            </div>
+            <div class="center mt-4" style="display:flex;gap:.65rem;align-items:center;justify-content:center;flex-wrap:wrap">
+                <span class="muted" id="labelMonthly" style="font-weight:400">Miesięcznie</span>
+                <button id="billingToggle" class="toggle" aria-label="Przełącz rozliczenie"><span class="knob"></span></button>
+                <span class="muted" id="labelYearly" style="font-weight:700">Rocznie</span>
+                <span class="badge" id="badgeFree">2 mies. gratis</span>
+            </div>
+
+            <div class="grid grid-4 mt-8">
+                <!-- Starter -->
+                <div class="card pad">
+                    <div class="feature-title">Starter</div>
+                    <div class="mt-2"><span class="price" id="p-starter" data-testid="p-starter">299 zł</span> <span id="s-starter" class="muted" data-testid="s-starter">/ mies.</span></div>
+                    <ul class="list mt-2">
+                        <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7" /></svg>Do 1 000 SKU / konto Allegro</li>
+                        <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7" /></svg>Prognozy sprzedaży (podstawowe)</li>
+                        <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7" /></svg>Wykrywanie anomalii cen i popytu</li>
+                        <li class="muted">Raport tygodniowy PDF/Email</li>
+                        <li class="muted">Podstawowa integracja Allegro API</li>
+                    </ul>
+                    <div class="mt-6"><a class="btn" href="#signup">Rozpocznij</a></div>
+                </div>
+
+                <!-- Growth (highlight) -->
+                <div class="card pad" style="border:2px solid var(--accent)">
+                    <div class="feature-title">Growth</div>
+                    <div class="mt-2"><span class="price" id="p-growth" data-testid="p-growth">899 zł</span> <span id="s-growth" class="muted" data-testid="s-growth">/ mies.</span></div>
+                    <ul class="list mt-2">
+                        <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7" /></svg>Do 10 000 SKU</li>
+                        <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7" /></svg>Prognozy granularne per SKU, sezonowość</li>
+                        <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7" /></svg>Rekomendacje cenowe + alerty</li>
+                        <li class="muted">Symulacje 'co-jeśli' i plan zakupów</li>
+                        <li class="muted">Integracje ERP/WMS (konektory)</li>
+                    </ul>
+                    <div class="mt-6"><a class="btn primary" href="#signup">Wypróbuj Growth</a></div>
+                </div>
+
+                <!-- Pro -->
+                <div class="card pad">
+                    <div class="feature-title">Pro</div>
+                    <div class="mt-2"><span class="price" id="p-pro" data-testid="p-pro">2 499 zł</span> <span id="s-pro" class="muted" data-testid="s-pro">/ mies.</span></div>
+                    <ul class="list mt-2">
+                        <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7" /></svg>Do 100 000 SKU</li>
+                        <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7" /></svg>Dynamic pricing (reguły + RL)</li>
+                        <li><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7" /></svg>Alerty SMS/Push, harmonogram</li>
+                        <li class="muted">SLA 99.9% i dedykowany opiekun</li>
+                        <li class="muted">API i webhooki, SSO, audyt danych</li>
+                    </ul>
+                    <div class="mt-6"><a class="btn" href="#signup">Zamów Demo</a></div>
+                </div>
+
+                <!-- Enterprise -->
+                <div class="card pad">
+                    <div class="feature-title">Enterprise</div>
+                    <div class="mt-2"><span class="price">Skrojona oferta</span></div>
+                    <ul class="list mt-2">
+                        <li class="muted">&gt;100 000 SKU i multi-konto</li>
+                        <li class="muted">Procesy szyte na miarę</li>
+                        <li class="muted">Dodatkowe środowiska i VPC</li>
+                        <li class="muted">Zaawansowane polityki bezpieczeństwa</li>
+                    </ul>
+                    <div class="mt-6"><a class="btn primary" href="#contact">Porozmawiajmy</a></div>
+                </div>
+            </div>
+            <p class="note center mt-6">Ceny netto. Dostępne zniżki roczne i dla startupów. Możliwy onboarding płatny jednorazowo.</p>
+        </div>
+    </section>
+
+    <!-- demo + contact form -->
+    <section id="demo">
+        <div class="container">
+            <div class="card pad" style="max-width:800px;margin:0 auto">
+                <div class="center">
+                    <h3 style="margin:0">Formularz kontaktowy</h3>
+                    <p class="muted" style="margin-top:0.5rem">
+                        Masz pytania lub chcesz złożyć zamówienie? Wypełnij poniższy formularz, a skontaktujemy się z Tobą.
+                    </p>
+                </div>
+                <div style="margin-top:1.5rem">
+                    <div style="width:80%;margin:0 auto">
+                        <form id="contactForm" action="https://formspree.io/f/mqadvnng" method="POST">
+                            <div id="formWarning" class="alert err" style="display:none"></div>
+                            <div id="formOk" class="alert ok" style="display:none"></div>
+
+                            <div class="grid" style="grid-template-columns:1fr 1fr;gap:.75rem">
+                                <input class="input" name="name" placeholder="Imię i nazwisko" required />
+                                <input class="input" name="company" placeholder="Firma / konto Allegro" />
+                            </div>
+                            <input class="input mt-2" name="email" placeholder="Adres email" type="email" required />
+                            <textarea class="mt-2" name="message" placeholder="Krótko opisz potrzeby (SKU, kategorie, wyzwania)" required></textarea>
+
+                            <!-- helpers -->
+                            <input type="hidden" name="_subject" value="Nowe zgłoszenie z formularza VendoPilot">
+                            <input type="text" name="website" style="display:none" tabindex="-1" autocomplete="off">
+
+                            <label class="note mt-2" style="display:flex;gap:.5rem;align-items:flex-start">
+                                <input type="checkbox" id="consent" name="consent" required> Wyrażam zgodę na kontakt w celu przedstawienia oferty oraz przetwarzanie danych zgodnie z Polityką prywatności.
+                            </label>
+
+                            <div class="mt-3" style="display:flex;gap:.5rem">
+                                <button class="btn primary" type="submit" id="sendBtn">Wyślij</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- footer -->
+        <footer>
+            <div class="container">
+                <div class="footer-row">
+                    <p class="muted">© <span id="year"></span> Simmsoft. Wszelkie prawa zastrzeżone.</p>
+                    <div style="display:flex;gap:1rem">
+                        <a class="muted" href="#">Regulamin</a>
+                        <a class="muted" href="#">Polityka prywatności</a>
+                        <a class="muted" href="#">Bezpieczeństwo</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+
+        <script>// === Global config ===
+            const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mqadvnng'; // <- Podmień na swój ID
+
+            // === Init year ===
+            document.getElementById('year').textContent = new Date().getFullYear();
+
+            // === Pricing toggle logic (yearly = 10x monthly => 2 months free) ===
+            const toggle = document.getElementById('billingToggle');
+            const labelMonthly = document.getElementById('labelMonthly');
+            const labelYearly = document.getElementById('labelYearly');
+            const badgeFree = document.getElementById('badgeFree');
+            const saveText = document.getElementById('saveText');
+
+            let yearly = true;
+            function price(monthly) { return yearly ? Math.round(monthly * 10) : monthly }
+            function fmt(n) { return n.toLocaleString('pl-PL') + ' zł' }
+
+            function refreshPrices() {
+                document.getElementById('p-starter').textContent = fmt(price(299));
+                document.getElementById('p-growth').textContent = fmt(price(899));
+                document.getElementById('p-pro').textContent = fmt(price(2499));
+                document.getElementById('s-starter').textContent = yearly ? '/ rok' : '/ mies.';
+                document.getElementById('s-growth').textContent = yearly ? '/ rok' : '/ mies.';
+                document.getElementById('s-pro').textContent = yearly ? '/ rok' : '/ mies.';
+                labelMonthly.style.fontWeight = yearly ? '400' : '700';
+                labelYearly.style.fontWeight = yearly ? '700' : '400';
+                toggle.classList.toggle('active', yearly);
+                badgeFree.style.display = yearly ? 'inline-flex' : 'none';
+                saveText.textContent = yearly ? '(2 mies. gratis)' : '';
+            }
+
+            toggle.addEventListener('click', () => { yearly = !yearly; refreshPrices(); });
+            refreshPrices();</script>
+        <script id="formspreeHandler">// === Contact form (Formspree) — inline success/error, no redirect ===
+            (function () {
+                const form = document.getElementById('contactForm');
+                if (!form) return;
+                const warn = document.getElementById('formWarning');
+                const ok = document.getElementById('formOk');
+                const consent = document.getElementById('consent');
+                const sendBtn = document.getElementById('sendBtn');
+                const ENDPOINT = 'https://formspree.io/f/mqadvnng';
+
+                function show(el, msg) {
+                    if (!el) return;
+                    el.textContent = msg;
+                    el.style.display = 'block';
+                }
+                function hide(el) { if (el) el.style.display = 'none'; }
+
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault(); // prevent navigation
+                    hide(warn); hide(ok);
+
+                    if (!consent || !consent.checked) {
+                        show(warn, 'Zaznacz zgodę RODO.');
+                        return;
+                    }
+
+                    const data = new FormData(form);
+
+                    // honeypot: if website field has any value, treat as success but do nothing
+                    const honey = (data.get('website') || '').trim();
+                    if (honey.length) {
+                        show(ok, 'Dziękujemy! Formularz został wysłany.');
+                        form.reset();
+                        if (consent) consent.checked = false;
+                        return;
+                    }
+
+                    try {
+                        if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Wysyłanie…'; }
+                        const res = await fetch(ENDPOINT, {
+                            method: 'POST',
+                            body: data,
+                            headers: { 'Accept': 'application/json' }
+                        });
+
+                        if (res.ok) {
+                            show(ok, 'Dziękujemy! Formularz został wysłany.');
+                            form.reset();
+                            if (consent) consent.checked = false;
+                            return;
+                        }
+
+                        // Try to parse Formspree error details for 422 etc.
+                        let msg = 'Błąd wysyłki.';
+                        try {
+                            const j = await res.json();
+                            if (j && j.errors && j.errors.length) {
+                                msg = j.errors.map(e => e.message).join(' • ');
+                            } else {
+                                msg = (j && (j.error || j.message)) || msg;
+                            }
+                        } catch (_) {
+                            const txt = await res.text();
+                            if (txt && txt.trim().length) msg = txt.trim();
+                        }
+                        show(warn, msg);
+                    } catch (err) {
+                        show(warn, (err && err.message) ? err.message : 'Błąd sieci.');
+                    } finally {
+                        if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Wyślij'; }
+                    }
+                });
+            })();</script>
+</body>
+</html>
